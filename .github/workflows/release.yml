@@ -1,0 +1,53 @@
+# 发包：推 `v*` 标签时把清单和 `memes/` 拼成 `miyu-memes-shorin-collection/` 文件夹，打成
+# `miyu-memes-shorin-collection-<版本>.tar.gz` 挂到 GitHub Release。没有程序，不分平台。用的人解开以后
+# `miyu pkg install ./miyu-memes-shorin-collection`。
+#
+# 手动跑（workflow_dispatch）只打包、传成这一次跑的产物，不建 Release；版本写 `dev-<提交前 8 位>`。
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: 拼文件夹、打包
+        id: pack
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="dev-${GITHUB_SHA::8}"
+          fi
+          dir=miyu-memes-shorin-collection
+          rm -rf dist && mkdir -p "dist/$dir"
+          cp -R package.toml memes "dist/$dir/"
+          # 结构不对就不发：清单、索引、图都要在，索引里的每张图都要有。
+          for need in package.toml memes/index.json; do
+            [ -f "dist/$dir/$need" ] || { echo "包里少了 $dir/$need"; exit 1; }
+          done
+          missing=$(python3 -c "import json,os,sys;d=sys.argv[1];print('\n'.join(m['file'] for m in json.load(open(d+'/index.json',encoding='utf-8'))['memes'] if not os.path.isfile(d+'/'+m['file'])))" "dist/$dir/memes")
+          [ -z "$missing" ] || { echo "索引里有、文件夹里没有：$missing"; exit 1; }
+          name="$dir-$version.tar.gz"
+          tar -czf "dist/$name" -C dist "$dir"
+          echo "file=dist/$name" >> "$GITHUB_OUTPUT"
+          echo "打好了 $name"
+      - name: 传成这一次跑的产物
+        uses: actions/upload-artifact@v7
+        with:
+          name: collection
+          path: ${{ steps.pack.outputs.file }}
+          if-no-files-found: error
+      - name: 建 Release、挂上包
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "${{ steps.pack.outputs.file }}" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes "表情包合集 $GITHUB_REF_NAME：解开以后 miyu pkg install ./miyu-memes-shorin-collection（要先装 miyu-memes）。"
