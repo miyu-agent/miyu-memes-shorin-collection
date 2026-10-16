@@ -1,0 +1,9 @@
+[package]
+version = "0.1.0"
+name = { zh = "表情包合集（shorin）", en = "Sticker collection (shorin)", ja = "スタンプ集（shorin）" }
+summary = { zh = "给「表情包」带的一套图：Miyu 旧版的 38 张", en = "A set of stickers for the Stickers package: the 38 from the old Miyu", ja = "「スタンプ」パッケージ用の画像セット：旧 Miyu の 38 枚" }
+icon = "images"
+
+# 给 miyu-memes 带的内容（核心施工 X-22）：memes/ 下 index.json 和 images/。
+[content.miyu-memes]
+dir = "memes"
