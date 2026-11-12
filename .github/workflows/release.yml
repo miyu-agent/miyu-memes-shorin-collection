@@ -1,6 +1,6 @@
-# 发包：推 `v*` 标签时把清单和 `memes/` 拼成 `miyu-memes-shorin-collection/` 文件夹，打成
-# `miyu-memes-shorin-collection-<版本>.tar.gz` 挂到 GitHub Release。没有程序，不分平台。用的人解开以后
-# `miyu pkg install ./miyu-memes-shorin-collection`。
+# 发包：推 `v*` 标签时把清单和 `memes/` 拼成 `memes-shorin-collection/` 文件夹（包编号就是文件夹的名字，11-12 起不带 miyu-），打成
+# `memes-shorin-collection-<版本>.tar.gz` 挂到 GitHub Release。没有程序，不分平台。用的人解开以后
+# `miyu pkg install ./memes-shorin-collection`。
 #
 # 手动跑（workflow_dispatch）只打包、传成这一次跑的产物，不建 Release；版本写 `dev-<提交前 8 位>`。
 name: Release
@@ -27,7 +27,7 @@ jobs:
           else
             version="dev-${GITHUB_SHA::8}"
           fi
-          dir=miyu-memes-shorin-collection
+          dir=memes-shorin-collection
           rm -rf dist && mkdir -p "dist/$dir"
           cp -R package.toml memes "dist/$dir/"
           # 结构不对就不发：清单、索引、图都要在，索引里的每张图都要有。
