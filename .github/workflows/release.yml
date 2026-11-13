@@ -50,4 +50,4 @@ jobs:
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "${{ steps.pack.outputs.file }}" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes "表情包合集 $GITHUB_REF_NAME：解开以后 miyu pkg install ./miyu-memes-shorin-collection（要先装 miyu-memes）。"
+        run: gh release create "$GITHUB_REF_NAME" "${{ steps.pack.outputs.file }}" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes "表情包合集 $GITHUB_REF_NAME：解开以后 miyu pkg install ./memes-shorin-collection（要先装 memes）。"
