@@ -3,8 +3,10 @@
 给 Miyu 的「表情包」软件包（[miyu-agent/miyu-memes](https://github.com/miyu-agent/miyu-memes)）带的一套图：旧版 Miyu 的 38 张，描述、用法照旧。没有程序，只有清单和 `memes/`。
 
 ```sh
-miyu pkg install ./memes-shorin-collection
+miyu pkg install memes-shorin-collection
 ```
+
+从源码装：把这个仓库克隆成名叫 `memes-shorin-collection` 的文件夹（文件夹名就是包编号），再 `miyu pkg install ./memes-shorin-collection`。
 
 装上以后表情包会把这些图读进库（来源记「内容包」）；卸了，没被人改过的那些一起拿掉。
 

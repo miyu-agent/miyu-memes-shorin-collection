@@ -1,53 +1,34 @@
-# 发包：推 `v*` 标签时把清单和 `memes/` 拼成 `memes-shorin-collection/` 文件夹（包编号就是文件夹的名字，11-12 起不带 miyu-），打成
-# `memes-shorin-collection-<版本>.tar.gz` 挂到 GitHub Release。没有程序，不分平台。用的人解开以后
-# `miyu pkg install ./memes-shorin-collection`。
+# 发包：推 `v*` 标签（v 加上 package.toml 里的 version）时先查索引和图对得上，再照官方打包模板把仓库根目录打成
+# `memes-shorin-collection-<版本>.miyu`，传进这个标签的 Release；官方软件源每天收一次，收进去以后
+# `miyu pkg install memes-shorin-collection` 就能装（2026-11-13 项目主人定进官方软件源，以前是 tar.gz、解开手动装）。
 #
-# 手动跑（workflow_dispatch）只打包、传成这一次跑的产物，不建 Release；版本写 `dev-<提交前 8 位>`。
-name: Release
+# 手动跑（workflow_dispatch）只查、只打包，包放进这一次跑的产物，不建 Release。
+name: release
 
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  pack:
-    timeout-minutes: 10
+  # 结构不对就不发：清单、索引都要在，索引里的每张图都要有。
+  check:
+    timeout-minutes: 5
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - name: 拼文件夹、打包
-        id: pack
+      - name: 索引里的图都在
         run: |
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            version="${GITHUB_REF_NAME#v}"
-          else
-            version="dev-${GITHUB_SHA::8}"
-          fi
-          dir=memes-shorin-collection
-          rm -rf dist && mkdir -p "dist/$dir"
-          cp -R package.toml memes "dist/$dir/"
-          # 结构不对就不发：清单、索引、图都要在，索引里的每张图都要有。
           for need in package.toml memes/index.json; do
-            [ -f "dist/$dir/$need" ] || { echo "包里少了 $dir/$need"; exit 1; }
+            [ -f "$need" ] || { echo "::error::少了 $need"; exit 1; }
           done
-          missing=$(python3 -c "import json,os,sys;d=sys.argv[1];print('\n'.join(m['file'] for m in json.load(open(d+'/index.json',encoding='utf-8'))['memes'] if not os.path.isfile(d+'/'+m['file'])))" "dist/$dir/memes")
-          [ -z "$missing" ] || { echo "索引里有、文件夹里没有：$missing"; exit 1; }
-          name="$dir-$version.tar.gz"
-          tar -czf "dist/$name" -C dist "$dir"
-          echo "file=dist/$name" >> "$GITHUB_OUTPUT"
-          echo "打好了 $name"
-      - name: 传成这一次跑的产物
-        uses: actions/upload-artifact@v7
-        with:
-          name: collection
-          path: ${{ steps.pack.outputs.file }}
-          if-no-files-found: error
-      - name: 建 Release、挂上包
-        if: github.ref_type == 'tag'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "${{ steps.pack.outputs.file }}" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes "表情包合集 $GITHUB_REF_NAME：解开以后 miyu pkg install ./memes-shorin-collection（要先装 memes）。"
+          missing=$(python3 -c "import json,os,sys;d=sys.argv[1];print('\n'.join(m['file'] for m in json.load(open(d+'/index.json',encoding='utf-8'))['memes'] if not os.path.isfile(d+'/'+m['file'])))" memes)
+          [ -z "$missing" ] || { echo "::error::索引里有、文件夹里没有：$missing"; exit 1; }
+
+  pack:
+    needs: check
+    uses: miyu-agent/packages/.github/workflows/pack.yml@main
+    permissions:
+      contents: write
+    with:
+      package: memes-shorin-collection
